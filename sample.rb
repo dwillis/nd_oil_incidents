@@ -11,7 +11,7 @@
     require 'watir-webdriver'
     require 'nokogiri'
     #open a file to receive the data 
-    File.open('/path/on/your/machine', 'w') do |dump|  
+    File.open('/path/on/your/machine/newfile.txt', 'w') do |dump|  
       
       #fire up a browser -- I found firefox worked better for me, but ymmv
       
@@ -42,5 +42,47 @@
         #click the "next" button, identified by CSS tag
         browser.button(:id => "rptPager__ctl2_lnkPage").click
       end
-      #done with pages
+      #done with pages close file
     end     
+    
+    #this code sample shows how to open up the scraped data and convert it into something that could be read by your database program.
+ <parser.rb>
+ 
+ CSV.open('/path/on/your/machine/newfile.csv', 'w',{:col_sep => "\t",:encoding => 'UTF-8'}) do |csv|
+       results = Nokogiri::HTML(open("/path/on/your/machine/newfile.txt",:encoding => 'UTF-8').read)
+       rows  = results.css("tr").select{|x| x.css("td").size==14 && x.css("td")[0].inner_text.match(/\A\s*\Z/).nil?}
+       rows.each do |row|
+         csv << row.children.css("td").map{|r| r.text.strip}
+       end
+ end
+ 
+   # this code shows how to read incidents from your database, grab the corresponding PDF, and dump that text into another database table.
+ <pdfgetter.rb>
+
+    require 'pdf/reader'
+    require 'net/http'
+    require 'open-uri'
+    # get a list of incidents from the database
+     toget=Incidents.all(:limit=>10)  #limit to 10 to test our your script first
+     toget.each do |t|
+     the_url="http://www.ndhealth.gov/EHS/FOIA/Spills/Summary_Reports/"<<t.incident_id.to_s<<"_summary_report.pdf"
+     web_contents  = open(the_url) 
+     #load contents into a variable called reader
+     reader = PDF::Reader.new(web_contents) 
+     the_text=""
+      reader.pages.each do |page|
+        the_text << page.text
+      end
+      #dump text into a table in the datase
+      n=FullText.new
+      n.incident_id=t.incident_id
+      n.the_doc=the_text
+      n.save!
+      puts t.incident_id
+    end
+    
+    # this code shows how to write some regex statements to parse important fields that were only contained in the PDF file.
+    
+    
+ 
+ 

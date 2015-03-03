@@ -56,7 +56,8 @@
        end
  end
  
-   # this code shows how to read incidents from your database, grab the corresponding PDF, and dump that text into another database table.
+   # this code shows how to read incidents from your database, grab the corresponding PDF, and dump that text into another database table, plus pull out key fields with regex.
+   #example url       the_url="http://www.ndhealth.gov/EHS/FOIA/Spills/Summary_Reports/20140716184201_summary_report.pdf"
  <pdfgetter.rb>
 
     require 'pdf/reader'
@@ -77,12 +78,11 @@
       n=FullText.new
       n.incident_id=t.incident_id
       n.the_doc=the_text
+      #regex to pull out responsible party
+      n.responsible_party=the_text.match(/\bResponsible Party:\s?(.+)/)[1].lstrip.rstrip 
       n.save!
       puts t.incident_id
     end
-    
-    # this code shows how to write some regex statements to parse important fields that were only contained in the PDF file.
-    
-    
+   
  
  
